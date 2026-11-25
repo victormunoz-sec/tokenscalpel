@@ -1,34 +1,74 @@
 # TokenScalpel
 
 **Cut AI coding-agent token spend by 77%–85%+ and crash-test LLMs before trusting them in production.**  
-*Zero npm dependencies · Pure Node.js · Structural Outliner · `HMAS-DSL` 3-Tier Protocol · Variable-Model Evals (`E1–E4`).*  
-**Technical Report (v1.1 · Zenodo DOI):** [10.5281/zenodo.24451422](https://doi.org/10.5281/zenodo.24451422)
+*Zero npm dependencies · Pure Node.js · Exact Block-End Outliner (`--diff` / `--refs`) · Pauli Multi-File Selector · Shell Delta Diet · `HMAS-DSL` · Variable-Model Evals (`E1–E4`).*  
+**Technical Report (v1.1 · Zenodo DOI):** [10.5281/zenodo.24451422](https://doi.org/10.5281/zenodo.24451422) · **Current Release:** `v1.2.0`
 
 > **Why TokenScalpel?** Auditing 261 real production coding-agent sessions (~54.4M input characters) revealed that **70.1% of token spend is not reasoning—it is `read_file` blindly dumping entire files into context**. Meanwhile, lightweight and 3B–8B models silently fail in production via **ontological overload loops**, **tool omission during warm dialogue**, and **same-model context contamination**. TokenScalpel gives engineering teams and model labs reproducible tools to fix both.
 
 ---
 
-## 60-Second Quickstart
+## What Does It Do? (In 30 Seconds)
 
-Requires **Node.js >= 20**. Zero `npm install`.
+When you use AI coding assistants (Claude Code, Cursor, OpenCode, Antigravity), **70%+ of your tokens** are wasted reading entire files or pasting huge terminal logs.
+
+TokenScalpel sits in front of your files and terminal with **0 dependencies** (`Node.js >= 20`, no `npm install` needed):
+1. **Shows the map of a file** (only function/class names + exact line numbers) instead of dumping 1,000 lines.
+2. **Slices only the exact function** you need (`--slice myFunc`) instead of guessing line ranges.
+3. **Picks the best non-redundant snippets** across multiple files (Pauli selector).
+4. **Compresses long terminal/test logs** (`shell-diet.mjs`) and on repeat runs only prints **what actually changed** (Delta Mode).
+
+---
+
+## Beginner's Guide: How to Use It (4 Everyday Commands)
 
 ```bash
 git clone https://github.com/victormunoz-sec/tokenscalpel.git
 cd tokenscalpel
-
-# 1. Outline any large file before reading it (-85% to -95% input tokens)
-node src/outline.mjs src/outline.mjs
-
-# 2. Read ONLY the exact function slice you need
-node src/outline.mjs src/outline.mjs --slice 14:46
-
-# 3. Run the reproducible Token-Diet benchmark
-node bench/token-diet.mjs
-
-# 4. Run the Variable-Model Crash-Test Suite (reference matrix or live Ollama)
-node src/eval-models.mjs --reference
-node src/eval-models.mjs --ollama qwen2.5-coder:3b
 ```
+
+### 1. Map a large file before reading it
+```bash
+node src/outline.mjs src/outline.mjs
+```
+*Output:* a compact table of symbols with exact `[start-end]` lines (~85%–95% fewer tokens than reading the whole file).
+
+### 2. Read ONLY one function (or only what changed in `git diff`)
+```bash
+# Extract a single function/class by name (exact start-to-end block)
+node src/outline.mjs src/outline.mjs --slice outlineFile
+
+# List only symbols touched in your current git diff
+node src/outline.mjs src/outline.mjs --diff
+
+# Find where a symbol is defined, imported, or used (capped at 35 matches)
+node src/outline.mjs --refs selectPauliSlices src/
+```
+
+### 3. Shrink long terminal/test outputs (Delta Mode)
+Prefix any noisy command (`npm test`, `pytest`, `tsc`, build logs) with `shell-diet.mjs`:
+```bash
+node src/shell-diet.mjs -- node --test test/tokenscalpel.test.mjs
+```
+- **Run 1:** If output exceeds 120 lines, it keeps the header, errors, and tail.
+- **Run 2+:** Ignores changing timestamps, UUIDs, ANSI colors, and `ms` timings, showing only **new or changed lines**. Add `--dsl` for ultra-compact agent headers.
+
+### 4. Verify everything works on your machine
+```bash
+node --test test/tokenscalpel.test.mjs   # 8/8 unit tests
+node bench/token-diet.mjs                # Reproducible BPE benchmark
+node src/eval-models.mjs --reference     # Model crash-test matrix (or --ollama <model>)
+```
+
+---
+
+## What's New in `v1.2.0` (vs `v1.1.0`)
+
+- **Exact Block-End Slicing (`src/outline.mjs`):** Replaced blind `±25`-line windows with zero-dependency brace/indent block bounds (`[line, endLine]`) for JS/TS, Python, HTML, and Markdown. Python benchmark savings jumped from `-67.4%` (`v1.1`) to **`-76.9%` (`v1.2`)**.
+- **Native Pauli Multi-File Selector (`src/pauli-select.mjs`):** Greedy re-ranking across files that keeps the top match intact and attenuates duplicate symbol coverage in subsequent snippets (**`-74.7%` BPE** on cross-module tasks, `3/3 PASS`).
+- **Shell Output Diet + Normalized Delta Mode (`src/shell-diet.mjs`):** Compresses long CLI/test outputs and strips ANSI codes, timestamps, UUIDs, and durations (`ms|s`) before diffing re-runs.
+- **`--slice <symbol>`, `--diff`, and `--refs <symbol>`:** Surgical symbol extraction, `git diff` hunk-to-symbol mapping, and capped reference search (`MAX_REFS = 35`).
+- **Automated Test Suite (`test/tokenscalpel.test.mjs`):** 8/8 unit tests + updated `bench/results_v1.2.json` (**`-79.9%` overall BPE**, `18/18 PASS`).
 
 ---
 
@@ -42,7 +82,10 @@ Evaluated across 18 real-world engineering tasks on 3 diverse open-source codeba
 |---|---:|---:|---:|---:|
 | **E1 (Full Read / Baseline)** | 91,136 | 90,942 | 18/18 PASS | Base (0.0%) |
 | **E2 (Grep + ±25L ranges, max 4 blocks/file)** | 37,310 | 34,509 | 18/18 PASS | **-59.1%** |
-| **E3 (TokenScalpel `outline.mjs` + ranges)** | 20,577 | 19,115 | 18/18 PASS | **-77.4%** (-44.8% vs E2) |
+| **E3 (TokenScalpel v1.1 `outline.mjs` + `±25L`)** | 20,698 | 19,230 | 18/18 PASS | **-78.4%** (-44.6% vs E2) |
+| **E4 (TokenScalpel v1.2 Exact `[line, endLine]` + Pauli)** | 19,304 | 17,484 | 18/18 PASS | **-79.9%** (-6.7% vs E3) |
+
+> Cross-module multi-file benchmark (3 tasks): E1 = 24,267 BPE -> E3 = 6,513 BPE (-73.2%, 3/3 PASS) -> **E4 = 6,142 BPE (-74.7%, 3/3 PASS)**.
 
 #### Breakdown by Repository (BPE Tokens)
 - **`hebbmesh`** (6 tasks): 56,335 (E1) -> 17,931 (E2, -68.2%) -> **8,115 (E3, -85.6%)**

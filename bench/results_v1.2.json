@@ -1,0 +1,1059 @@
+{
+  "protocol": "Protocolo Preregistro v1.2 - Paper 2 / TokenScalpel",
+  "date": "2026-11-25T17:16:17.601Z",
+  "tokenizer": {
+    "model": "cl100k_base",
+    "provider": "python tiktoken 0.14.0",
+    "heuristic_comparison": "Math.round(chars / 4)"
+  },
+  "verification": {
+    "tasks_total": 18,
+    "tasks_e2_passed": 18,
+    "tasks_e3_passed": 18,
+    "tasks_e4_passed": 18,
+    "all_18_pass": true,
+    "multi_file_total": 3,
+    "multi_file_e3_passed": 3,
+    "multi_file_e4_passed": 3
+  },
+  "retrieval_strategies": {
+    "totals": {
+      "e1_full_read": {
+        "bpe": 95836,
+        "chars4": 94740
+      },
+      "e2_grep_ranges": {
+        "bpe": 37375,
+        "chars4": 34549,
+        "reduction_pct_bpe": "61.0%"
+      },
+      "e3_outline_ranges": {
+        "bpe": 20698,
+        "chars4": 19230,
+        "reduction_pct_bpe": "78.4%"
+      },
+      "e4_outline_pauli": {
+        "bpe": 19304,
+        "chars4": 17484,
+        "reduction_pct_bpe": "79.9%"
+      }
+    },
+    "comparison": {
+      "e4_vs_e1_reduction": "79.9%",
+      "e4_vs_e3_reduction": "6.7%",
+      "e3_vs_e1_reduction": "78.4%",
+      "e2_vs_e1_reduction": "61.0%",
+      "e3_vs_e2_reduction": "44.6%",
+      "rule_r5_known_symbol_inversion": "E3 is smaller than E2 on known_symbol"
+    },
+    "by_repo": {
+      "hebbmesh": {
+        "tasks": 6,
+        "e1_bpe": 61035,
+        "e2_bpe": 17996,
+        "e3_bpe": 8236,
+        "e4_bpe": 9950,
+        "e2_reduction_bpe": "70.5%",
+        "e3_reduction_bpe": "86.5%",
+        "e4_reduction_bpe": "83.7%"
+      },
+      "Ext-Py-Bench": {
+        "tasks": 6,
+        "e1_bpe": 14649,
+        "e2_bpe": 8020,
+        "e3_bpe": 4782,
+        "e4_bpe": 3383,
+        "e2_reduction_bpe": "45.3%",
+        "e3_reduction_bpe": "67.4%",
+        "e4_reduction_bpe": "76.9%"
+      },
+      "Ext-Py-VoiceAgent": {
+        "tasks": 6,
+        "e1_bpe": 20152,
+        "e2_bpe": 11359,
+        "e3_bpe": 7680,
+        "e4_bpe": 5971,
+        "e2_reduction_bpe": "43.6%",
+        "e3_reduction_bpe": "61.9%",
+        "e4_reduction_bpe": "70.4%"
+      }
+    },
+    "by_kind": {
+      "known_symbol": {
+        "tasks": 9,
+        "e1_bpe": 33955,
+        "e2_bpe": 17347,
+        "e3_bpe": 8973,
+        "e4_bpe": 8049,
+        "e2_reduction_bpe": "48.9%",
+        "e3_reduction_bpe": "73.6%",
+        "e4_reduction_bpe": "76.3%"
+      },
+      "exploratory": {
+        "tasks": 9,
+        "e1_bpe": 61881,
+        "e2_bpe": 20028,
+        "e3_bpe": 11725,
+        "e4_bpe": 11255,
+        "e2_reduction_bpe": "67.6%",
+        "e3_reduction_bpe": "81.1%",
+        "e4_reduction_bpe": "81.8%"
+      }
+    },
+    "tasks_detail": [
+      {
+        "id": "HM-1",
+        "repo": "hebbmesh",
+        "kind": "known_symbol",
+        "name": "Audit findBridge A* synaptic pathfinder and Privacy Firewall",
+        "files": [
+          "src/engine.mjs"
+        ],
+        "terms": [
+          "findBridge",
+          "Privacy Firewall",
+          "options.disablePrivacyFirewall"
+        ],
+        "expectedFacts": [
+          "export function findBridge",
+          "disablePrivacyFirewall",
+          "Privacy Firewall"
+        ],
+        "e1": {
+          "bpe": 14367,
+          "chars4": 11389,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 4223,
+          "chars4": 3259,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1181,
+          "chars4": 1019,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1419,
+          "chars4": 1124,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "HM-2",
+        "repo": "hebbmesh",
+        "kind": "known_symbol",
+        "name": "Inspect SQLite WAL schema & applyHebbianDelta persistence",
+        "files": [
+          "src/storage.mjs"
+        ],
+        "terms": [
+          "openDb",
+          "applyHebbianDelta",
+          "PRAGMA journal_mode = WAL"
+        ],
+        "expectedFacts": [
+          "function openDb",
+          "export function applyHebbianDelta",
+          "PRAGMA journal_mode = WAL"
+        ],
+        "e1": {
+          "bpe": 2366,
+          "chars4": 2355,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 2404,
+          "chars4": 2147,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1262,
+          "chars4": 1126,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 997,
+          "chars4": 938,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "HM-3",
+        "repo": "hebbmesh",
+        "kind": "known_symbol",
+        "name": "Verify startViewerServer HTTP handler & CSP headers",
+        "files": [
+          "src/viewer-server.mjs"
+        ],
+        "terms": [
+          "startViewerServer",
+          "Content-Security-Policy",
+          "writeHead"
+        ],
+        "expectedFacts": [
+          "export function startViewerServer",
+          "Content-Security-Policy",
+          "res.writeHead"
+        ],
+        "e1": {
+          "bpe": 990,
+          "chars4": 908,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 975,
+          "chars4": 831,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 705,
+          "chars4": 602,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 927,
+          "chars4": 774,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "HM-4",
+        "repo": "hebbmesh",
+        "kind": "exploratory",
+        "name": "Investigate Hebbian compilation pipeline and synaptic decay weaving",
+        "files": [
+          "src/engine.mjs"
+        ],
+        "terms": [
+          "compileNetwork",
+          "weaveEdgesAndDendrites",
+          "decay"
+        ],
+        "expectedFacts": [
+          "export function compileNetwork",
+          "function weaveEdgesAndDendrites",
+          "options.decay"
+        ],
+        "e1": {
+          "bpe": 14367,
+          "chars4": 11389,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 3236,
+          "chars4": 2659,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1640,
+          "chars4": 1397,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1623,
+          "chars4": 1366,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "HM-5",
+        "repo": "hebbmesh",
+        "kind": "exploratory",
+        "name": "Trace interactive 3D A* bridge invocation in HTML viewer",
+        "files": [
+          "viewer/index.html"
+        ],
+        "terms": [
+          "fireBridge",
+          "bridgePath",
+          "bridgePill"
+        ],
+        "expectedFacts": [
+          "async function fireBridge",
+          "bridgePath",
+          "bridgePill"
+        ],
+        "e1": {
+          "bpe": 21808,
+          "chars4": 19604,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 3473,
+          "chars4": 2825,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1123,
+          "chars4": 1009,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 2220,
+          "chars4": 1958,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "HM-6",
+        "repo": "hebbmesh",
+        "kind": "exploratory",
+        "name": "Inspect statistical benchmarking & privacy probes runner",
+        "files": [
+          "bench/benchmark.mjs"
+        ],
+        "terms": [
+          "runPrivacyProbes",
+          "runCondition",
+          "clusterBootstrapCategory"
+        ],
+        "expectedFacts": [
+          "function runPrivacyProbes",
+          "function runCondition",
+          "function clusterBootstrapCategory"
+        ],
+        "e1": {
+          "bpe": 7137,
+          "chars4": 5788,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 3685,
+          "chars4": 2910,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 2325,
+          "chars4": 1783,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 2764,
+          "chars4": 2164,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "EB-1",
+        "repo": "Ext-Py-Bench",
+        "kind": "known_symbol",
+        "name": "Inspect search_leaderboard table filtering in benchmark suite",
+        "files": [
+          "leaderboard/app.py"
+        ],
+        "terms": [
+          "def search_leaderboard",
+          "DATA_OVERALL",
+          "filter_tags"
+        ],
+        "expectedFacts": [
+          "def search_leaderboard",
+          "DATA_OVERALL",
+          "filter_tags"
+        ],
+        "e1": {
+          "bpe": 2426,
+          "chars4": 2819,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 3270,
+          "chars4": 3363,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 797,
+          "chars4": 722,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 418,
+          "chars4": 377,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "EB-2",
+        "repo": "Ext-Py-Bench",
+        "kind": "known_symbol",
+        "name": "Audit call_gpt wrapper and COMMON_SYSTEM_PROMPT in core functions",
+        "files": [
+          "src/geo_functions.py"
+        ],
+        "terms": [
+          "def call_gpt",
+          "COMMON_SYSTEM_PROMPT",
+          "openai.ChatCompletion"
+        ],
+        "expectedFacts": [
+          "def call_gpt",
+          "COMMON_SYSTEM_PROMPT",
+          "openai.ChatCompletion"
+        ],
+        "e1": {
+          "bpe": 3051,
+          "chars4": 3586,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 966,
+          "chars4": 999,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 799,
+          "chars4": 805,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 882,
+          "chars4": 840,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "EB-3",
+        "repo": "Ext-Py-Bench",
+        "kind": "known_symbol",
+        "name": "Inspect citation regex extraction and word count metrics",
+        "files": [
+          "src/utils.py"
+        ],
+        "terms": [
+          "extract_citations_new",
+          "get_num_words"
+        ],
+        "expectedFacts": [
+          "def extract_citations_new",
+          "def get_num_words",
+          "citation_pattern"
+        ],
+        "e1": {
+          "bpe": 3115,
+          "chars4": 3225,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 1472,
+          "chars4": 1320,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1107,
+          "chars4": 949,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 712,
+          "chars4": 589,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "EB-4",
+        "repo": "Ext-Py-Bench",
+        "kind": "exploratory",
+        "name": "Investigate dataset download and cache routines in leaderboard app",
+        "files": [
+          "leaderboard/app.py"
+        ],
+        "terms": [
+          "download_data",
+          "leaderboard.jsonl"
+        ],
+        "expectedFacts": [
+          "def download_data",
+          "leaderboard.jsonl",
+          "ret_code = os.system"
+        ],
+        "e1": {
+          "bpe": 2426,
+          "chars4": 2819,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 1207,
+          "chars4": 1029,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 600,
+          "chars4": 532,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 289,
+          "chars4": 239,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "EB-5",
+        "repo": "Ext-Py-Bench",
+        "kind": "exploratory",
+        "name": "Investigate prompt generation and search template formatting",
+        "files": [
+          "src/utils.py"
+        ],
+        "terms": [
+          "get_prompt",
+          "COMMON_SYSTEM_PROMPT",
+          "query_prompt"
+        ],
+        "expectedFacts": [
+          "def get_prompt",
+          "source",
+          "query"
+        ],
+        "e1": {
+          "bpe": 3115,
+          "chars4": 3225,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 416,
+          "chars4": 363,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 888,
+          "chars4": 759,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 705,
+          "chars4": 613,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "EB-6",
+        "repo": "Ext-Py-Bench",
+        "kind": "exploratory",
+        "name": "Investigate generate_answer OpenAI 16k execution pipeline",
+        "files": [
+          "src/generative_le.py"
+        ],
+        "terms": [
+          "generate_answer",
+          "query_prompt",
+          "ChatCompletion.create"
+        ],
+        "expectedFacts": [
+          "def generate_answer",
+          "query_prompt",
+          "openai.ChatCompletion.create"
+        ],
+        "e1": {
+          "bpe": 516,
+          "chars4": 575,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 689,
+          "chars4": 687,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 591,
+          "chars4": 589,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 377,
+          "chars4": 355,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "VT-1",
+        "repo": "Ext-Py-VoiceAgent",
+        "kind": "known_symbol",
+        "name": "Audit CORSStaticFiles and AvatarStaticFiles mounting in server",
+        "files": [
+          "server.py"
+        ],
+        "terms": [
+          "class CORSStaticFiles",
+          "class AvatarStaticFiles",
+          "init_webtool_routes"
+        ],
+        "expectedFacts": [
+          "class CORSStaticFiles",
+          "class AvatarStaticFiles",
+          "init_webtool_routes"
+        ],
+        "e1": {
+          "bpe": 1177,
+          "chars4": 1534,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 1214,
+          "chars4": 1311,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 781,
+          "chars4": 808,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 995,
+          "chars4": 1078,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "VT-2",
+        "repo": "Ext-Py-VoiceAgent",
+        "kind": "known_symbol",
+        "name": "Audit WebSocketHandler control message dispatcher and audio intake",
+        "files": [
+          "websocket_handler.py"
+        ],
+        "terms": [
+          "class MessageType",
+          "class WebSocketHandler",
+          "_handle_audio_data"
+        ],
+        "expectedFacts": [
+          "class MessageType",
+          "class WebSocketHandler",
+          "_handle_audio_data"
+        ],
+        "e1": {
+          "bpe": 4374,
+          "chars4": 5946,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 1523,
+          "chars4": 1629,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1627,
+          "chars4": 1703,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1213,
+          "chars4": 1242,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "VT-3",
+        "repo": "Ext-Py-VoiceAgent",
+        "kind": "known_symbol",
+        "name": "Audit Claude AsyncLLM message formatter adapter",
+        "files": [
+          "agent/stateless_llm/claude_llm.py"
+        ],
+        "terms": [
+          "class AsyncLLM",
+          "_convert_message_format",
+          "StatelessLLMInterface"
+        ],
+        "expectedFacts": [
+          "class AsyncLLM",
+          "def _convert_message_format",
+          "StatelessLLMInterface"
+        ],
+        "e1": {
+          "bpe": 2089,
+          "chars4": 3032,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 1300,
+          "chars4": 1404,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 714,
+          "chars4": 746,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 486,
+          "chars4": 473,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "VT-4",
+        "repo": "Ext-Py-VoiceAgent",
+        "kind": "exploratory",
+        "name": "Investigate ServiceContext agent initialization and configuration lifecycle",
+        "files": [
+          "service_context.py"
+        ],
+        "terms": [
+          "class ServiceContext",
+          "init_agent",
+          "persona_prompt"
+        ],
+        "expectedFacts": [
+          "class ServiceContext",
+          "async def init_agent",
+          "persona_prompt"
+        ],
+        "e1": {
+          "bpe": 4563,
+          "chars4": 5952,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 2606,
+          "chars4": 2928,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1747,
+          "chars4": 1879,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1217,
+          "chars4": 1251,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "VT-5",
+        "repo": "Ext-Py-VoiceAgent",
+        "kind": "exploratory",
+        "name": "Investigate chat history directory sanitization and loading",
+        "files": [
+          "chat_history_manager.py"
+        ],
+        "terms": [
+          "_sanitize_path_component",
+          "HistoryMessage",
+          "get_history"
+        ],
+        "expectedFacts": [
+          "def _sanitize_path_component",
+          "class HistoryMessage",
+          "def get_history"
+        ],
+        "e1": {
+          "bpe": 2921,
+          "chars4": 3415,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 1787,
+          "chars4": 1788,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1619,
+          "chars4": 1613,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1179,
+          "chars4": 1241,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "VT-6",
+        "repo": "Ext-Py-VoiceAgent",
+        "kind": "exploratory",
+        "name": "Investigate BasicMemoryAgent memory buffering and history sync",
+        "files": [
+          "agent/agents/basic_memory_agent.py"
+        ],
+        "terms": [
+          "BasicMemoryAgent",
+          "self._memory",
+          "set_memory_from_history"
+        ],
+        "expectedFacts": [
+          "class BasicMemoryAgent",
+          "self._memory",
+          "def set_memory_from_history"
+        ],
+        "e1": {
+          "bpe": 5028,
+          "chars4": 7179,
+          "recallPass": true
+        },
+        "e2": {
+          "bpe": 2929,
+          "chars4": 3097,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1192,
+          "chars4": 1189,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 881,
+          "chars4": 862,
+          "recallPass": true
+        }
+      }
+    ]
+  },
+  "multi_file_benchmark": {
+    "tasks_count": 3,
+    "totals": {
+      "e1_bpe": 24267,
+      "e3_bpe": 6513,
+      "e4_bpe": 6142,
+      "e3_reduction_vs_e1": "73.2%",
+      "e4_reduction_vs_e1": "74.7%",
+      "e4_vs_e3_reduction": "5.7%",
+      "e3_passed": 3,
+      "e4_passed": 3
+    },
+    "tasks_detail": [
+      {
+        "id": "MF-HM-1",
+        "repo": "hebbmesh",
+        "name": "Trace bridge query, network persistence load, and viewer /api/bridge endpoint",
+        "files": [
+          "src/engine.mjs",
+          "src/storage.mjs",
+          "src/viewer-server.mjs"
+        ],
+        "e1": {
+          "bpe": 17723,
+          "chars4": 14653,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 3070,
+          "chars4": 2657,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 2724,
+          "chars4": 2331,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "MF-EB-1",
+        "repo": "Ext-Py-Bench",
+        "name": "Trace GEO improve pipeline across search_handler and generate_answer",
+        "files": [
+          "src/run_geo.py",
+          "src/search_try.py",
+          "src/generative_le.py"
+        ],
+        "e1": {
+          "bpe": 3050,
+          "chars4": 3329,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1848,
+          "chars4": 1693,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1967,
+          "chars4": 1864,
+          "recallPass": true
+        }
+      },
+      {
+        "id": "MF-VT-1",
+        "repo": "Ext-Py-VoiceAgent",
+        "name": "Trace client WebSocket route mounting, server setup, and MessageHandler response wait",
+        "files": [
+          "routes.py",
+          "server.py",
+          "message_handler.py"
+        ],
+        "e1": {
+          "bpe": 3494,
+          "chars4": 4668,
+          "recallPass": true
+        },
+        "e3": {
+          "bpe": 1595,
+          "chars4": 1665,
+          "recallPass": true
+        },
+        "e4": {
+          "bpe": 1451,
+          "chars4": 1538,
+          "recallPass": true
+        }
+      }
+    ]
+  },
+  "hmas_dsl_benchmark": {
+    "pairs_count": 10,
+    "totals": {
+      "prose_bpe": 808,
+      "prose_chars4": 775,
+      "dsl_bpe": 446,
+      "dsl_chars4": 288,
+      "bpe_reduction_pct": "44.8%",
+      "chars4_reduction_pct": "62.8%"
+    },
+    "pairs_detail": [
+      {
+        "id": "M1",
+        "scenario": "L1 Coordinator assigns SQLite WAL persistence task to L2 Backend Specialist",
+        "prose": {
+          "bpe": 106,
+          "chars4": 108,
+          "text": "Hola Kael, por favor necesito que revises la persistencia en el backend de HebbMesh. El objetivo principal es abrir la base de datos usando SQLite en modo WAL y asegurarnos de que la función applyHebbianDelta funcione correctamente sin errores. Revisa los archivos src/storage.mjs y src/engine.mjs. Recuerda que no debes hacer ningún commit ni push a git. Por favor diseña tu plan, audita los tests y responde cuando lo tengas listo."
+        },
+        "dsl": {
+          "bpe": 51,
+          "chars4": 34,
+          "text": "ROLE:Kael|OBJ:sqlite_wal_persistence|SCOPE:src/storage.mjs,src/engine.mjs|NO_GIT|NW_POLICY:THRESHOLD|PROTO:HMAS_DSL|PULL_CHECK:DONE|REPLY"
+        },
+        "bpe_reduction_pct": "51.9%"
+      },
+      {
+        "id": "M2",
+        "scenario": "L2 Backend Specialist assigns surgical outline scout to L3 Worker",
+        "prose": {
+          "bpe": 91,
+          "chars4": 92,
+          "text": "Hola worker nw-scout, por favor revisa el archivo de almacenamiento de HebbMesh en src/storage.mjs y localiza exactamente los números de línea donde se inicializan los PRAGMAs de SQLite en modo WAL y donde está definida la función applyHebbianDelta. Devuélveme únicamente las líneas exactas con su evidencia y no te comuniques para nada con el coordinador principal."
+        },
+        "dsl": {
+          "bpe": 46,
+          "chars4": 31,
+          "text": "MODE:SCOUT|T#:src/storage.mjs#L50-70->find_wal,src/storage.mjs#L250-280->find_delta|OUT:evidence_lines|SILENCE:@coordinator"
+        },
+        "bpe_reduction_pct": "49.5%"
+      },
+      {
+        "id": "M3",
+        "scenario": "L3 Worker reports exact line evidence back to L2 Specialist",
+        "prose": {
+          "bpe": 71,
+          "chars4": 72,
+          "text": "Hola Kael, ya completé la búsqueda que me pediste. Encontré la configuración de WAL en la línea 60 de src/storage.mjs con la instrucción PRAGMA journal_mode = WAL, y la función applyHebbianDelta está declarada en la línea 257 del mismo archivo. Todo funcionó correctamente y sin errores."
+        },
+        "dsl": {
+          "bpe": 40,
+          "chars4": 28,
+          "text": "T1:OK|src/storage.mjs#L60:PRAGMA journal_mode = WAL|T2:OK|src/storage.mjs#L257:export function applyHebbianDelta"
+        },
+        "bpe_reduction_pct": "43.7%"
+      },
+      {
+        "id": "M4",
+        "scenario": "L2 Specialist audits diff, runs tests, kills worker, and reports to L1 Coordinator",
+        "prose": {
+          "bpe": 87,
+          "chars4": 81,
+          "text": "Hola Eva, he terminado la revisión técnica y auditoría de la persistencia WAL. Todos los tests de HebbMesh pasaron satisfactoriamente al 100%. Verifiqué las líneas con evidencia física, maté al worker nw-scout y confirmo que no hay ninguna alucinación. El cambio requirió agregar 14 líneas y eliminar 3 en src/storage.mjs."
+        },
+        "dsl": {
+          "bpe": 38,
+          "chars4": 21,
+          "text": "AUDIT:PASS|0_HALLUC|NW:killed(nw-scout)|FILES:src/storage.mjs#L55-75|DELTA:+14L/-3L"
+        },
+        "bpe_reduction_pct": "56.3%"
+      },
+      {
+        "id": "M5",
+        "scenario": "L1 Coordinator deploys L2 AppSec Specialist to audit viewer CSP headers",
+        "prose": {
+          "bpe": 85,
+          "chars4": 85,
+          "text": "Elliot, te asigno la auditoría de seguridad del servidor local del visor de HebbMesh. Necesitamos verificar que las cabeceras HTTP Content-Security-Policy y CORS no permitan inyecciones externas ni vulnerabilidades XSS. El archivo afectado es src/viewer-server.mjs. Todo debe quedar estrictamente local sin tocar repositorios remotos de git."
+        },
+        "dsl": {
+          "bpe": 49,
+          "chars4": 32,
+          "text": "ROLE:Elliot|OBJ:audit_csp_and_cors|SCOPE:src/viewer-server.mjs|NO_GIT|NW_POLICY:THRESHOLD|PROTO:HMAS_DSL|PULL_CHECK:DONE|REPLY"
+        },
+        "bpe_reduction_pct": "42.4%"
+      },
+      {
+        "id": "M6",
+        "scenario": "L2 AppSec Specialist delegates regex scan of endpoints to L3 Worker",
+        "prose": {
+          "bpe": 72,
+          "chars4": 66,
+          "text": "Atención worker, ejecuta un escaneo estático de seguridad en el archivo src/viewer-server.mjs. Busca la cabecera Content-Security-Policy y el bloque de manejo de rutas GET /api/bridge. Extrae las líneas de respuesta HTTP y no hables con nadie más excepto conmigo."
+        },
+        "dsl": {
+          "bpe": 50,
+          "chars4": 34,
+          "text": "MODE:SCOUT|T#:src/viewer-server.mjs#L40-70->check_csp,src/viewer-server.mjs#L75-105->check_routes|OUT:exact_headers|SILENCE:@coordinator"
+        },
+        "bpe_reduction_pct": "30.6%"
+      },
+      {
+        "id": "M7",
+        "scenario": "L3 Worker returns security evidence to L2 AppSec Specialist",
+        "prose": {
+          "bpe": 57,
+          "chars4": 55,
+          "text": "Elliot, reporte de escaneo listo: la cabecera CSP está en la línea 58 de src/viewer-server.mjs configurada como default-src self unsafe-inline y connect-src self. La ruta /api/bridge responde correctamente en la línea 82."
+        },
+        "dsl": {
+          "bpe": 46,
+          "chars4": 31,
+          "text": "T1:OK|src/viewer-server.mjs#L58:Content-Security-Policy:default-src 'self'|T2:OK|src/viewer-server.mjs#L82:route:/api/bridge"
+        },
+        "bpe_reduction_pct": "19.3%"
+      },
+      {
+        "id": "M8",
+        "scenario": "L2 AppSec Specialist delivers security blueprint to L1 Coordinator",
+        "prose": {
+          "bpe": 79,
+          "chars4": 72,
+          "text": "Eva, auditoría de seguridad completada con éxito. El servidor local cumple con la política de aislamiento, no expone puertos externos y tiene CSP activa. He eliminado al worker de apoyo, 0 alucinaciones detectadas. Se verificaron 109 líneas en src/viewer-server.mjs con delta de 0 líneas."
+        },
+        "dsl": {
+          "bpe": 40,
+          "chars4": 22,
+          "text": "AUDIT:PASS|0_HALLUC|NW:killed(nw-sec)|FILES:src/viewer-server.mjs#L47-109|DELTA:+0L/-0L"
+        },
+        "bpe_reduction_pct": "49.4%"
+      },
+      {
+        "id": "M9",
+        "scenario": "L1 Coordinator orders L2 Frontend Specialist to refine 3D A* bridge visuals",
+        "prose": {
+          "bpe": 78,
+          "chars4": 71,
+          "text": "Aria, necesitamos optimizar los estilos y la interactividad del botón y píldora flotante del 3D A* Bridge en el visor interactivo. Trabaja sobre viewer/index.html asegurando que el badge amarillo y el stream de pulsos funcionen fluidamente. Cero commits en git, verifica localmente."
+        },
+        "dsl": {
+          "bpe": 47,
+          "chars4": 31,
+          "text": "ROLE:Aria|OBJ:polish_3d_bridge_pill|SCOPE:viewer/index.html|NO_GIT|NW_POLICY:THRESHOLD|PROTO:HMAS_DSL|PULL_CHECK:DONE|REPLY"
+        },
+        "bpe_reduction_pct": "39.7%"
+      },
+      {
+        "id": "M10",
+        "scenario": "L2 Frontend Specialist reports completed visual enhancement to L1 Coordinator",
+        "prose": {
+          "bpe": 82,
+          "chars4": 73,
+          "text": "Eva, la optimización visual de la píldora flotante del A* Bridge ha sido completada. Se verificaron las clases CSS bridge-pill y la animación de shockwaves. Realicé la edición quirúrgica directa sin necesidad de invocar workers debido a que fue un cambio menor a 40 líneas. 0 alucinaciones."
+        },
+        "dsl": {
+          "bpe": 39,
+          "chars4": 24,
+          "text": "AUDIT:PASS|0_HALLUC|NW:skip(surgical_edit<80L)|FILES:viewer/index.html#L174-215|DELTA:+12L/-5L"
+        },
+        "bpe_reduction_pct": "52.4%"
+      }
+    ]
+  }
+}

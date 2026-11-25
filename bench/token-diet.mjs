@@ -3,14 +3,16 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
 import { outlineFile, sliceFile } from '../src/outline.mjs';
+import { selectPauliSlices } from '../src/pauli-select.mjs';
 
 /**
- * TokenScalpel Protocol Benchmark v1.1 (`bench/token-diet.mjs`)
+ * TokenScalpel Protocol Benchmark v1.2 (`bench/token-diet.mjs`)
  * 
- * Compares 3 codebase retrieval strategies across 18 deterministic tasks in 3 repos:
+ * Compares 4 codebase retrieval strategies across 18 deterministic tasks in 3 repos (+ 3 multi-file tasks):
  *  - E1 (full_read): Blind full-file read of all task files.
  *  - E2 (grep_ranges): Mechanistic regex search on terms -> +-25 line window -> merged overlapping -> max 4 slices/file.
  *  - E3 (outline_ranges): Structural outline -> AST symbol match -> +-25 line window around matching symbols -> max 4 slices/file.
+ *  - E4 (outline_pauli): Exact [line, endLine] structural blocks (capped <=120L) + Pauli Exclusion slice selection.
  * 
  * BPE Tokenizer: exact OpenAI cl100k_base via python tiktoken 0.14.0 + chars/4 heuristic.
  * Coordination Protocol: HMAS-DSL vs Prose natural language (10 canonical pairs).
@@ -197,6 +199,37 @@ export const TASKS_V1_1 = [
     files: ['agent/agents/basic_memory_agent.py'],
     terms: ['BasicMemoryAgent', 'self._memory', 'set_memory_from_history'],
     expectedFacts: ['class BasicMemoryAgent', 'self._memory', 'def set_memory_from_history']
+  }
+];
+
+// 3 Multi-File Cross-Module Retrieval Tasks (E3 vs E4 comparison)
+export const MULTI_FILE_TASKS = [
+  {
+    id: 'MF-HM-1',
+    repo: 'hebbmesh',
+    kind: 'multi_file',
+    name: 'Trace bridge query, network persistence load, and viewer /api/bridge endpoint',
+    files: ['src/engine.mjs', 'src/storage.mjs', 'src/viewer-server.mjs'],
+    terms: ['findBridge', 'loadNetwork', 'sanitizeNetworkForViewer', '/api/bridge'],
+    expectedFacts: ['export function findBridge', 'export function loadNetwork', 'function sanitizeNetworkForViewer']
+  },
+  {
+    id: 'MF-EB-1',
+    repo: 'Ext-Py-Bench',
+    kind: 'multi_file',
+    name: 'Trace GEO improve pipeline across search_handler and generate_answer',
+    files: ['src/run_geo.py', 'src/search_try.py', 'src/generative_le.py'],
+    terms: ['def improve', 'search_handler', 'generate_answer'],
+    expectedFacts: ['def improve', 'def search_handler', 'def generate_answer']
+  },
+  {
+    id: 'MF-VT-1',
+    repo: 'Ext-Py-VoiceAgent',
+    kind: 'multi_file',
+    name: 'Trace client WebSocket route mounting, server setup, and MessageHandler response wait',
+    files: ['routes.py', 'server.py', 'message_handler.py'],
+    terms: ['init_client_ws_route', 'class WebSocketServer', 'wait_for_response'],
+    expectedFacts: ['def init_client_ws_route', 'class WebSocketServer', 'async def wait_for_response']
   }
 ];
 
@@ -409,23 +442,136 @@ function runStrategyE3(task) {
   return { text: totalReturnedText, chars: totalReturnedText.length, recallPass };
 }
 
+// Strategy E4: Exact [line, endLine] Structural Blocks (<=120L cap) + Pauli Exclusion Selection
+export function runStrategyE4(task) {
+  const repoRoot = REPO_PATHS[task.repo];
+  const termRegexes = task.terms.map((t) => new RegExp(escapeRx(t), 'i'));
+  let totalReturnedText = '';
+  const allEntries = [];
+
+  for (const rel of task.files) {
+    const abs = path.resolve(repoRoot, rel);
+    const out = outlineFile(abs);
+
+    const outlineText = out.entries.map((e) => `L${e.line}-L${e.endLine} [${e.kind}] ${e.text}`).join('\n');
+    totalReturnedText += outlineText + '\n';
+
+    for (const e of out.entries) {
+      const isPyClass = e.kind === 'symbol' && /^class\s+/.test(e.text);
+      const maxSpan = isPyClass ? 40 : 60;
+      const cappedEnd = Math.min(e.endLine, e.line + maxSpan - 1);
+      const slice = sliceFile(abs, e.line, cappedEnd);
+
+      const matchedTerms = [];
+      let headerHits = 0;
+      let bodyHits = 0;
+      for (let ti = 0; ti < termRegexes.length; ti++) {
+        const rx = termRegexes[ti];
+        const inHeader = rx.test(e.text);
+        const inBody = rx.test(slice.body);
+        if (inHeader) headerHits++;
+        if (inBody) bodyHits++;
+        if (inHeader || inBody) matchedTerms.push(ti);
+      }
+
+      allEntries.push({
+        file: rel,
+        startLine: slice.startLine,
+        endLine: slice.endLine,
+        text: slice.body,
+        headerHits,
+        bodyHits,
+        matchedTerms,
+        baseScore: headerHits * 5 + bodyHits * 1.5 + (e.endLine - e.line + 1 <= 120 ? 0.25 : 0),
+        symbol: e.text,
+      });
+    }
+  }
+
+  // Prefer header-matched symbols; add body-matched entries only for terms not yet covered by headers
+  const coveredByHeader = new Set();
+  let candidates = allEntries.filter((c) => {
+    if (c.headerHits > 0) {
+      for (const ti of c.matchedTerms) coveredByHeader.add(ti);
+      return true;
+    }
+    return false;
+  });
+
+  const uncoveredTerms = termRegexes.map((_, i) => i).filter((i) => !coveredByHeader.has(i));
+  if (uncoveredTerms.length > 0) {
+    const bodyCandidates = allEntries.filter(
+      (c) => c.headerHits === 0 && c.matchedTerms.some((ti) => uncoveredTerms.includes(ti))
+    );
+    candidates.push(...bodyCandidates);
+  }
+
+  // Exploratory fallback per file if a task file still has zero candidates
+  for (const rel of task.files) {
+    if (!candidates.some((c) => c.file === rel)) {
+      const fallback = allEntries.filter((c) => c.file === rel).slice(0, 4);
+      candidates.push(...fallback.map((c) => ({ ...c, baseScore: 0.5 })));
+    }
+  }
+
+  const maxSlices = Math.min(candidates.length, task.files.length > 1 ? Math.max(4, task.files.length * 2) : 4);
+  const maxTokens = Math.max(4000, task.files.length * 3000);
+  const selected = selectPauliSlices(candidates, task.terms, {
+    maxSlices,
+    maxTokens,
+    gamma: 0.7,
+    fileDiversityBonus: task.files.length > 1 ? 0.5 : 0.25,
+  });
+
+  // Sort selected slices deterministically by file and startLine, and stop once all query terms are covered (min 1 slice)
+  const coveredTerms = new Set();
+  const minimalSelected = [];
+  for (const s of selected) {
+    minimalSelected.push(s);
+    for (const ti of s.matchedTerms || []) coveredTerms.add(ti);
+    if (coveredTerms.size >= termRegexes.length && task.files.every((f) => minimalSelected.some((m) => m.file === f))) {
+      break;
+    }
+  }
+  minimalSelected.sort((a, b) => a.file.localeCompare(b.file) || a.startLine - b.startLine);
+  for (const s of minimalSelected) {
+    totalReturnedText += s.text + '\n';
+  }
+
+  let recallPass = true;
+  for (const fact of task.expectedFacts) {
+    if (!totalReturnedText.includes(fact)) {
+      recallPass = false;
+    }
+  }
+
+  return { text: totalReturnedText, chars: totalReturnedText.length, recallPass, selectedCount: minimalSelected.length };
+}
+
 // Main Execution Routine
 export async function runBenchmark() {
   console.log('================================================================');
-  console.log(' TOKENSCALPEL BENCHMARK v1.1 — BPE cl100k_base & 18 Tasks Test');
+  console.log(' TOKENSCALPEL BENCHMARK v1.2 — BPE cl100k_base & 18+3 Tasks Test');
   console.log('================================================================\n');
 
-  const resultsPath = path.resolve(benchDir, 'results_v1.1.json');
+  const resultsV11Path = path.resolve(benchDir, 'results_v1.1.json');
+  const resultsPath = path.resolve(benchDir, 'results_v1.2.json');
   const hasExternalLab = Object.values(REPO_PATHS).every((p) => fs.existsSync(p));
-  if (!hasExternalLab && fs.existsSync(resultsPath)) {
-    const cached = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-    const t = cached.retrieval_strategies.totals;
-    console.log('[Standalone Mode] External 3-repo benchmark fixtures validated from pre-computed results_v1.1.json:');
-    console.log(`E1 (full_read):      ${t.e1_full_read.bpe.toLocaleString()} BPE tokens [Base 100%]`);
-    console.log(`E2 (grep_ranges):    ${t.e2_grep_ranges.bpe.toLocaleString()} BPE tokens [-${t.e2_grep_ranges.reduction_pct_bpe}]`);
-    console.log(`E3 (outline_ranges): ${t.e3_outline_ranges.bpe.toLocaleString()} BPE tokens [-${t.e3_outline_ranges.reduction_pct_bpe}]`);
-    console.log(`HMAS-DSL (10 pairs): ${cached.hmas_dsl_benchmark.totals.prose_bpe} -> ${cached.hmas_dsl_benchmark.totals.dsl_bpe} BPE tokens (-${cached.hmas_dsl_benchmark.totals.bpe_reduction_pct})`);
-    return cached;
+  if (!hasExternalLab) {
+    const fallbackPath = fs.existsSync(resultsPath) ? resultsPath : resultsV11Path;
+    if (fs.existsSync(fallbackPath)) {
+      const cached = JSON.parse(fs.readFileSync(fallbackPath, 'utf8'));
+      const t = cached.retrieval_strategies.totals;
+      console.log(`[Standalone Mode] External 3-repo benchmark fixtures validated from ${path.basename(fallbackPath)}:`);
+      console.log(`E1 (full_read):      ${t.e1_full_read.bpe.toLocaleString()} BPE tokens [Base 100%]`);
+      console.log(`E2 (grep_ranges):    ${t.e2_grep_ranges.bpe.toLocaleString()} BPE tokens [-${t.e2_grep_ranges.reduction_pct_bpe}]`);
+      console.log(`E3 (outline_ranges): ${t.e3_outline_ranges.bpe.toLocaleString()} BPE tokens [-${t.e3_outline_ranges.reduction_pct_bpe}]`);
+      if (t.e4_outline_pauli) {
+        console.log(`E4 (outline_pauli):  ${t.e4_outline_pauli.bpe.toLocaleString()} BPE tokens [-${t.e4_outline_pauli.reduction_pct_bpe}]`);
+      }
+      console.log(`HMAS-DSL (10 pairs): ${cached.hmas_dsl_benchmark.totals.prose_bpe} -> ${cached.hmas_dsl_benchmark.totals.dsl_bpe} BPE tokens (-${cached.hmas_dsl_benchmark.totals.bpe_reduction_pct})`);
+      return cached;
+    }
   }
 
   // 1. Gather all texts to tokenize in batch
@@ -436,16 +582,38 @@ export async function runBenchmark() {
     const e1 = runStrategyE1(task);
     const e2 = runStrategyE2(task);
     const e3 = runStrategyE3(task);
+    const e4 = runStrategyE4(task);
 
     const idxE1 = textsToTokenize.length; textsToTokenize.push(e1.text);
     const idxE2 = textsToTokenize.length; textsToTokenize.push(e2.text);
     const idxE3 = textsToTokenize.length; textsToTokenize.push(e3.text);
+    const idxE4 = textsToTokenize.length; textsToTokenize.push(e4.text);
 
     taskRuns.push({
       task,
       e1: { chars: e1.chars, recallPass: e1.recallPass, textIdx: idxE1 },
       e2: { chars: e2.chars, recallPass: e2.recallPass, textIdx: idxE2 },
       e3: { chars: e3.chars, recallPass: e3.recallPass, textIdx: idxE3 },
+      e4: { chars: e4.chars, recallPass: e4.recallPass, textIdx: idxE4 },
+    });
+  }
+
+  // Multi-file tasks (E1, E3 vs E4)
+  const multiFileRuns = [];
+  for (const task of MULTI_FILE_TASKS) {
+    const e1 = runStrategyE1(task);
+    const e3 = runStrategyE3(task);
+    const e4 = runStrategyE4(task);
+
+    const idxE1 = textsToTokenize.length; textsToTokenize.push(e1.text);
+    const idxE3 = textsToTokenize.length; textsToTokenize.push(e3.text);
+    const idxE4 = textsToTokenize.length; textsToTokenize.push(e4.text);
+
+    multiFileRuns.push({
+      task,
+      e1: { chars: e1.chars, recallPass: e1.recallPass, textIdx: idxE1 },
+      e3: { chars: e3.chars, recallPass: e3.recallPass, textIdx: idxE3 },
+      e4: { chars: e4.chars, recallPass: e4.recallPass, textIdx: idxE4 },
     });
   }
 
@@ -475,6 +643,20 @@ export async function runBenchmark() {
 
     tr.e3.bpe = bpeCounts[tr.e3.textIdx];
     tr.e3.chars4 = Math.round(tr.e3.chars / 4);
+
+    tr.e4.bpe = bpeCounts[tr.e4.textIdx];
+    tr.e4.chars4 = Math.round(tr.e4.chars / 4);
+  }
+
+  for (const mf of multiFileRuns) {
+    mf.e1.bpe = bpeCounts[mf.e1.textIdx];
+    mf.e1.chars4 = Math.round(mf.e1.chars / 4);
+
+    mf.e3.bpe = bpeCounts[mf.e3.textIdx];
+    mf.e3.chars4 = Math.round(mf.e3.chars / 4);
+
+    mf.e4.bpe = bpeCounts[mf.e4.textIdx];
+    mf.e4.chars4 = Math.round(mf.e4.chars / 4);
   }
 
   for (const pr of pairRuns) {
@@ -486,38 +668,42 @@ export async function runBenchmark() {
   }
 
   // 2. Compute Aggregates
-  let e1_bpe_total = 0, e2_bpe_total = 0, e3_bpe_total = 0;
-  let e1_c4_total = 0, e2_c4_total = 0, e3_c4_total = 0;
-  let all_e2_pass = true, all_e3_pass = true;
+  let e1_bpe_total = 0, e2_bpe_total = 0, e3_bpe_total = 0, e4_bpe_total = 0;
+  let e1_c4_total = 0, e2_c4_total = 0, e3_c4_total = 0, e4_c4_total = 0;
+  let all_e2_pass = true, all_e3_pass = true, all_e4_pass = true;
 
   const byRepo = {
-    hebbmesh: { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, count: 0 },
-    'Ext-Py-Bench': { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, count: 0 },
-    'Ext-Py-VoiceAgent': { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, count: 0 }
+    hebbmesh: { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, e4_bpe: 0, count: 0 },
+    'Ext-Py-Bench': { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, e4_bpe: 0, count: 0 },
+    'Ext-Py-VoiceAgent': { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, e4_bpe: 0, count: 0 }
   };
 
   const byKind = {
-    known_symbol: { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, count: 0 },
-    exploratory: { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, count: 0 }
+    known_symbol: { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, e4_bpe: 0, count: 0 },
+    exploratory: { e1_bpe: 0, e2_bpe: 0, e3_bpe: 0, e4_bpe: 0, count: 0 }
   };
 
   for (const tr of taskRuns) {
     e1_bpe_total += tr.e1.bpe;
     e2_bpe_total += tr.e2.bpe;
     e3_bpe_total += tr.e3.bpe;
+    e4_bpe_total += tr.e4.bpe;
 
     e1_c4_total += tr.e1.chars4;
     e2_c4_total += tr.e2.chars4;
     e3_c4_total += tr.e3.chars4;
+    e4_c4_total += tr.e4.chars4;
 
     if (!tr.e2.recallPass) all_e2_pass = false;
     if (!tr.e3.recallPass) all_e3_pass = false;
+    if (!tr.e4.recallPass) all_e4_pass = false;
 
     // By repo
     const r = byRepo[tr.task.repo];
     r.e1_bpe += tr.e1.bpe;
     r.e2_bpe += tr.e2.bpe;
     r.e3_bpe += tr.e3.bpe;
+    r.e4_bpe += tr.e4.bpe;
     r.count++;
 
     // By kind
@@ -525,7 +711,19 @@ export async function runBenchmark() {
     k.e1_bpe += tr.e1.bpe;
     k.e2_bpe += tr.e2.bpe;
     k.e3_bpe += tr.e3.bpe;
+    k.e4_bpe += tr.e4.bpe;
     k.count++;
+  }
+
+  // Multi-file totals
+  let mf_e1_bpe = 0, mf_e3_bpe = 0, mf_e4_bpe = 0;
+  let mf_e3_pass = 0, mf_e4_pass = 0;
+  for (const mf of multiFileRuns) {
+    mf_e1_bpe += mf.e1.bpe;
+    mf_e3_bpe += mf.e3.bpe;
+    mf_e4_bpe += mf.e4.bpe;
+    if (mf.e3.recallPass) mf_e3_pass++;
+    if (mf.e4.recallPass) mf_e4_pass++;
   }
 
   // 3. Compute Coordination Aggregates
@@ -543,8 +741,14 @@ export async function runBenchmark() {
   // 4. Print Summary Table
   console.log('--- 18 TASKS SUMMARY ---');
   console.log(`E1 (full_read):        ${e1_bpe_total.toLocaleString()} BPE tokens (${e1_c4_total.toLocaleString()} chars/4) [100.0% Base]`);
-  console.log(`E2 (grep_ranges):      ${e2_bpe_total.toLocaleString()} BPE tokens (${e2_c4_total.toLocaleString()} chars/4) [-${pct(e1_bpe_total, e2_bpe_total)}] | PASS: ${all_e2_pass ? '18/18' : 'FAIL'}`);
-  console.log(`E3 (outline_ranges):   ${e3_bpe_total.toLocaleString()} BPE tokens (${e3_c4_total.toLocaleString()} chars/4) [-${pct(e1_bpe_total, e3_bpe_total)}] | PASS: ${all_e3_pass ? '18/18' : 'FAIL'}`);
+  console.log(`E2 (grep_ranges):      ${e2_bpe_total.toLocaleString()} BPE tokens (${e2_c4_total.toLocaleString()} chars/4) [-${pct(e1_bpe_total, e2_bpe_total)}] | PASS: ${taskRuns.filter(t => t.e2.recallPass).length}/18`);
+  console.log(`E3 (outline_ranges):   ${e3_bpe_total.toLocaleString()} BPE tokens (${e3_c4_total.toLocaleString()} chars/4) [-${pct(e1_bpe_total, e3_bpe_total)}] | PASS: ${taskRuns.filter(t => t.e3.recallPass).length}/18`);
+  console.log(`E4 (outline_pauli):    ${e4_bpe_total.toLocaleString()} BPE tokens (${e4_c4_total.toLocaleString()} chars/4) [-${pct(e1_bpe_total, e4_bpe_total)}] | PASS: ${taskRuns.filter(t => t.e4.recallPass).length}/18`);
+
+  console.log('\n--- MULTI-FILE TASKS (3 cross-module tasks: E3 vs E4) ---');
+  console.log(`E1 (full_read):        ${mf_e1_bpe.toLocaleString()} BPE tokens [100.0% Base]`);
+  console.log(`E3 (outline_ranges):   ${mf_e3_bpe.toLocaleString()} BPE tokens [-${pct(mf_e1_bpe, mf_e3_bpe)}] | PASS: ${mf_e3_pass}/${multiFileRuns.length}`);
+  console.log(`E4 (outline_pauli):    ${mf_e4_bpe.toLocaleString()} BPE tokens [-${pct(mf_e1_bpe, mf_e4_bpe)}] | PASS: ${mf_e4_pass}/${multiFileRuns.length}`);
 
   console.log('\n--- BY REPOSITORY (BPE cl100k_base) ---');
   for (const [repoName, stats] of Object.entries(byRepo)) {
@@ -552,6 +756,7 @@ export async function runBenchmark() {
     console.log(`  E1: ${stats.e1_bpe.toLocaleString()} tokens`);
     console.log(`  E2: ${stats.e2_bpe.toLocaleString()} tokens (-${pct(stats.e1_bpe, stats.e2_bpe)})`);
     console.log(`  E3: ${stats.e3_bpe.toLocaleString()} tokens (-${pct(stats.e1_bpe, stats.e3_bpe)})`);
+    console.log(`  E4: ${stats.e4_bpe.toLocaleString()} tokens (-${pct(stats.e1_bpe, stats.e4_bpe)})`);
   }
 
   console.log('\n--- BY TASK KIND (BPE cl100k_base) ---');
@@ -560,6 +765,7 @@ export async function runBenchmark() {
     console.log(`  E1: ${stats.e1_bpe.toLocaleString()} tokens`);
     console.log(`  E2: ${stats.e2_bpe.toLocaleString()} tokens (-${pct(stats.e1_bpe, stats.e2_bpe)})`);
     console.log(`  E3: ${stats.e3_bpe.toLocaleString()} tokens (-${pct(stats.e1_bpe, stats.e3_bpe)})`);
+    console.log(`  E4: ${stats.e4_bpe.toLocaleString()} tokens (-${pct(stats.e1_bpe, stats.e4_bpe)})`);
   }
 
   console.log('\n--- HMAS-DSL COORDINATION BENCHMARK (10 Canonical Pairs) ---');
@@ -568,9 +774,9 @@ export async function runBenchmark() {
   console.log(`BPE Reduction:         -${pct(prose_bpe_total, dsl_bpe_total)}`);
   console.log(`chars/4 Reduction:     -${pct(prose_c4_total, dsl_c4_total)}`);
 
-  // 5. Build results_v1.1.json
+  // 5. Build results_v1.2.json
   const results = {
-    protocol: 'Protocolo Preregistro v1.1 - Paper 2 / TokenScalpel',
+    protocol: 'Protocolo Preregistro v1.2 - Paper 2 / TokenScalpel',
     date: new Date().toISOString(),
     tokenizer: {
       model: 'cl100k_base',
@@ -581,15 +787,22 @@ export async function runBenchmark() {
       tasks_total: TASKS_V1_1.length,
       tasks_e2_passed: taskRuns.filter(t => t.e2.recallPass).length,
       tasks_e3_passed: taskRuns.filter(t => t.e3.recallPass).length,
-      all_18_pass: all_e2_pass && all_e3_pass
+      tasks_e4_passed: taskRuns.filter(t => t.e4.recallPass).length,
+      all_18_pass: all_e2_pass && all_e3_pass && all_e4_pass,
+      multi_file_total: multiFileRuns.length,
+      multi_file_e3_passed: mf_e3_pass,
+      multi_file_e4_passed: mf_e4_pass
     },
     retrieval_strategies: {
       totals: {
         e1_full_read: { bpe: e1_bpe_total, chars4: e1_c4_total },
         e2_grep_ranges: { bpe: e2_bpe_total, chars4: e2_c4_total, reduction_pct_bpe: pct(e1_bpe_total, e2_bpe_total) },
-        e3_outline_ranges: { bpe: e3_bpe_total, chars4: e3_c4_total, reduction_pct_bpe: pct(e1_bpe_total, e3_bpe_total) }
+        e3_outline_ranges: { bpe: e3_bpe_total, chars4: e3_c4_total, reduction_pct_bpe: pct(e1_bpe_total, e3_bpe_total) },
+        e4_outline_pauli: { bpe: e4_bpe_total, chars4: e4_c4_total, reduction_pct_bpe: pct(e1_bpe_total, e4_bpe_total) }
       },
       comparison: {
+        e4_vs_e1_reduction: pct(e1_bpe_total, e4_bpe_total),
+        e4_vs_e3_reduction: pct(e3_bpe_total, e4_bpe_total),
         e3_vs_e1_reduction: pct(e1_bpe_total, e3_bpe_total),
         e2_vs_e1_reduction: pct(e1_bpe_total, e2_bpe_total),
         e3_vs_e2_reduction: pct(e2_bpe_total, e3_bpe_total),
@@ -605,8 +818,10 @@ export async function runBenchmark() {
             e1_bpe: v.e1_bpe,
             e2_bpe: v.e2_bpe,
             e3_bpe: v.e3_bpe,
+            e4_bpe: v.e4_bpe,
             e2_reduction_bpe: pct(v.e1_bpe, v.e2_bpe),
-            e3_reduction_bpe: pct(v.e1_bpe, v.e3_bpe)
+            e3_reduction_bpe: pct(v.e1_bpe, v.e3_bpe),
+            e4_reduction_bpe: pct(v.e1_bpe, v.e4_bpe)
           }
         ])
       ),
@@ -618,8 +833,10 @@ export async function runBenchmark() {
             e1_bpe: v.e1_bpe,
             e2_bpe: v.e2_bpe,
             e3_bpe: v.e3_bpe,
+            e4_bpe: v.e4_bpe,
             e2_reduction_bpe: pct(v.e1_bpe, v.e2_bpe),
-            e3_reduction_bpe: pct(v.e1_bpe, v.e3_bpe)
+            e3_reduction_bpe: pct(v.e1_bpe, v.e3_bpe),
+            e4_reduction_bpe: pct(v.e1_bpe, v.e4_bpe)
           }
         ])
       ),
@@ -633,7 +850,30 @@ export async function runBenchmark() {
         expectedFacts: tr.task.expectedFacts,
         e1: { bpe: tr.e1.bpe, chars4: tr.e1.chars4, recallPass: tr.e1.recallPass },
         e2: { bpe: tr.e2.bpe, chars4: tr.e2.chars4, recallPass: tr.e2.recallPass },
-        e3: { bpe: tr.e3.bpe, chars4: tr.e3.chars4, recallPass: tr.e3.recallPass }
+        e3: { bpe: tr.e3.bpe, chars4: tr.e3.chars4, recallPass: tr.e3.recallPass },
+        e4: { bpe: tr.e4.bpe, chars4: tr.e4.chars4, recallPass: tr.e4.recallPass }
+      }))
+    },
+    multi_file_benchmark: {
+      tasks_count: multiFileRuns.length,
+      totals: {
+        e1_bpe: mf_e1_bpe,
+        e3_bpe: mf_e3_bpe,
+        e4_bpe: mf_e4_bpe,
+        e3_reduction_vs_e1: pct(mf_e1_bpe, mf_e3_bpe),
+        e4_reduction_vs_e1: pct(mf_e1_bpe, mf_e4_bpe),
+        e4_vs_e3_reduction: pct(mf_e3_bpe, mf_e4_bpe),
+        e3_passed: mf_e3_pass,
+        e4_passed: mf_e4_pass
+      },
+      tasks_detail: multiFileRuns.map(mf => ({
+        id: mf.task.id,
+        repo: mf.task.repo,
+        name: mf.task.name,
+        files: mf.task.files,
+        e1: { bpe: mf.e1.bpe, chars4: mf.e1.chars4, recallPass: mf.e1.recallPass },
+        e3: { bpe: mf.e3.bpe, chars4: mf.e3.chars4, recallPass: mf.e3.recallPass },
+        e4: { bpe: mf.e4.bpe, chars4: mf.e4.chars4, recallPass: mf.e4.recallPass }
       }))
     },
     hmas_dsl_benchmark: {

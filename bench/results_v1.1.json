@@ -1,6 +1,6 @@
 {
   "protocol": "Protocolo Preregistro v1.1 - Paper 2 / TokenScalpel",
-  "date": "2026-11-23T00:41:05.775Z",
+  "date": "2026-11-25T17:07:35.882Z",
   "tokenizer": {
     "model": "cl100k_base",
     "provider": "python tiktoken 0.14.0",
@@ -15,34 +15,34 @@
   "retrieval_strategies": {
     "totals": {
       "e1_full_read": {
-        "bpe": 91134,
-        "chars4": 90942
+        "bpe": 95836,
+        "chars4": 94740
       },
       "e2_grep_ranges": {
-        "bpe": 37309,
-        "chars4": 34509,
-        "reduction_pct_bpe": "59.1%"
+        "bpe": 37375,
+        "chars4": 34549,
+        "reduction_pct_bpe": "61.0%"
       },
       "e3_outline_ranges": {
-        "bpe": 20577,
-        "chars4": 19115,
-        "reduction_pct_bpe": "77.4%"
+        "bpe": 20698,
+        "chars4": 19230,
+        "reduction_pct_bpe": "78.4%"
       }
     },
     "comparison": {
-      "e3_vs_e1_reduction": "77.4%",
-      "e2_vs_e1_reduction": "59.1%",
-      "e3_vs_e2_reduction": "44.8%",
+      "e3_vs_e1_reduction": "78.4%",
+      "e2_vs_e1_reduction": "61.0%",
+      "e3_vs_e2_reduction": "44.6%",
       "rule_r5_known_symbol_inversion": "E3 is smaller than E2 on known_symbol"
     },
     "by_repo": {
       "hebbmesh": {
         "tasks": 6,
-        "e1_bpe": 56333,
-        "e2_bpe": 17930,
-        "e3_bpe": 8115,
-        "e2_reduction_bpe": "68.2%",
-        "e3_reduction_bpe": "85.6%"
+        "e1_bpe": 61035,
+        "e2_bpe": 17996,
+        "e3_bpe": 8236,
+        "e2_reduction_bpe": "70.5%",
+        "e3_reduction_bpe": "86.5%"
       },
       "Ext-Py-Bench": {
         "tasks": 6,
@@ -64,19 +64,19 @@
     "by_kind": {
       "known_symbol": {
         "tasks": 9,
-        "e1_bpe": 31617,
-        "e2_bpe": 17336,
-        "e3_bpe": 8915,
-        "e2_reduction_bpe": "45.2%",
-        "e3_reduction_bpe": "71.8%"
+        "e1_bpe": 33955,
+        "e2_bpe": 17347,
+        "e3_bpe": 8973,
+        "e2_reduction_bpe": "48.9%",
+        "e3_reduction_bpe": "73.6%"
       },
       "exploratory": {
         "tasks": 9,
-        "e1_bpe": 59517,
-        "e2_bpe": 19973,
-        "e3_bpe": 11662,
-        "e2_reduction_bpe": "66.4%",
-        "e3_reduction_bpe": "80.4%"
+        "e1_bpe": 61881,
+        "e2_bpe": 20028,
+        "e3_bpe": 11725,
+        "e2_reduction_bpe": "67.6%",
+        "e3_reduction_bpe": "81.1%"
       }
     },
     "tasks_detail": [
@@ -99,18 +99,18 @@
           "Privacy Firewall"
         ],
         "e1": {
-          "bpe": 12029,
-          "chars4": 9506,
+          "bpe": 14367,
+          "chars4": 11389,
           "recallPass": true
         },
         "e2": {
-          "bpe": 4212,
-          "chars4": 3249,
+          "bpe": 4223,
+          "chars4": 3259,
           "recallPass": true
         },
         "e3": {
-          "bpe": 1123,
-          "chars4": 970,
+          "bpe": 1181,
+          "chars4": 1019,
           "recallPass": true
         }
       },
@@ -201,18 +201,18 @@
           "options.decay"
         ],
         "e1": {
-          "bpe": 12029,
-          "chars4": 9506,
+          "bpe": 14367,
+          "chars4": 11389,
           "recallPass": true
         },
         "e2": {
-          "bpe": 3181,
-          "chars4": 2629,
+          "bpe": 3236,
+          "chars4": 2659,
           "recallPass": true
         },
         "e3": {
-          "bpe": 1577,
-          "chars4": 1331,
+          "bpe": 1640,
+          "chars4": 1397,
           "recallPass": true
         }
       },
@@ -235,8 +235,8 @@
           "bridgePill"
         ],
         "e1": {
-          "bpe": 21782,
-          "chars4": 19572,
+          "bpe": 21808,
+          "chars4": 19604,
           "recallPass": true
         },
         "e2": {

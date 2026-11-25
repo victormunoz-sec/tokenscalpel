@@ -1,6 +1,6 @@
 {
   "name": "tokenscalpel",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Cut LLM coding-agent input tokens by 77%-85%+ with zero-dependency structural outlining, HMAS-DSL 3-tier orchestration, and a 4-test Variable-Model Crash-Test Suite.",
   "type": "module",
   "license": "AGPL-3.0-or-later",
@@ -10,9 +10,11 @@
   },
   "scripts": {
     "outline": "node src/outline.mjs",
+    "shell-diet": "node src/shell-diet.mjs",
     "bench": "node bench/token-diet.mjs",
     "eval": "node src/eval-models.mjs --reference",
-    "eval:ollama": "node src/eval-models.mjs --ollama qwen2.5-coder:3b"
+    "eval:ollama": "node src/eval-models.mjs --ollama qwen2.5-coder:3b",
+    "test": "node --test test/tokenscalpel.test.mjs"
   },
   "keywords": [
     "llm-agents",
