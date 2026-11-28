@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./tokenscalpel/src/shell-diet.mjs --dsl -- git status -sb",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

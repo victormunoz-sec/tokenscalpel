@@ -125,6 +125,16 @@ Measured with real OpenAI BPE tokenizer (`cl100k_base`):
 
 ---
 
+## Drop-In Agent Setup (Claude Code / Cursor / OpenCode / Antigravity)
+
+Adopt TokenScalpel **additively** without overwriting your existing `CLAUDE.md`, `AGENTS.md`, or hooks:
+
+- **Agent rules (zero-overwrite):** Import `@./tokenscalpel/integrations/agent-rules.md` inside your own `CLAUDE.md`, or append [`integrations/agent-rules.md`](./integrations/agent-rules.md) to your existing `AGENTS.md` / Cursor rules.
+- **Claude Code hook:** Merge [`integrations/claude-settings.example.json`](./integrations/claude-settings.example.json) into your existing `.claude/settings.json` `hooks` object.
+- **Antigravity hook:** Merge the `"tokenscalpel-shell-diet"` block from [`integrations/antigravity-hooks.example.json`](./integrations/antigravity-hooks.example.json) into your existing `.agents/hooks.json`.
+
+---
+
 ## Security by Construction
 
 Built for real production agent workflows with rigorous security engineering ([`SECURITY.md`](./SECURITY.md)):
